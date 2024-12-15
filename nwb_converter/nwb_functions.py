@@ -10,22 +10,15 @@ from pynwb.file import Subject
 def load_nwb_file(datapath, foldername):
 
     # load NWB file
-
-    datapath = Path('/Users/doctordu/Dropbox (Personal)/Professional/Data/Trisha')
-    foldername = 'H7101-241201'
-
     filepath = datapath / foldername
     filename = foldername + '.nwb'
     filepath = filepath / filename
 
     data = nap.load_file(str(filepath))
     print(data)
-    spikes = data['units']
-    epochs = data['epochs']
-    ang = data['head-direction']
-    pos = data['position']
 
-    print()
+    return data
+
 
 
 def save_nwb_file(nwbfile,datapath, foldername):
@@ -40,11 +33,11 @@ def add_events(nwbfile, events):
     print('Adding events to NWB file...')
 
   # Create a TimeIntervals table
-    events_table = TimeIntervals(name="Events")
+    events_table = TimeIntervals(name="events")
     events_table.add_column(name="event_type", description="Type of event")  # Add a column for event type
 
     for timestamp, state in events.items():
-        events_table.add_row(start_time=timestamp, stop_time=timestamp, event_type=state)
+        events_table.add_row(start_time=timestamp, stop_time=timestamp+0.001, event_type=state) # stop time doesn't matter
 
     nwbfile.add_time_intervals(events_table)
 
@@ -82,8 +75,8 @@ def add_probe(nwbfile, metadata, **kwargs):
 
     # create probe device
     device = nwbfile.create_device(
-        name=metadata.at[0, 'probe'],
-        description=metadata.at[0, 'probe_description']
+        name=metadata['probe'],
+        description=metadata['probe_description']
     )
 
     # now add electrodes
@@ -93,14 +86,14 @@ def add_probe(nwbfile, metadata, **kwargs):
             name='shank{}'.format(ishank),
             description='electrode group for shank{}'.format(ishank),
             device=device,
-            location=metadata.at[0, 'probe_target'],
+            location=metadata['probe_target'],
         )
 
         for ielec in range(n_channels):
             elec_depth = step * (n_channels - ielec-1)
             nwbfile.add_electrode(
                 x=0., y=float(elec_depth), z=0.,  # add electrode position
-                location=metadata.at[0, 'probe_target'],
+                location=metadata['probe_target'],
                 filtering='none',
                 is_faulty=False,  # TODO
                 group=electrode_group,
@@ -158,20 +151,20 @@ def add_tracking(nwbfile, pos, ang):
 def add_epochs(nwbfile, epochs, metadata):
     print('Adding epochs to NWB file...')
     for epoch in range(epochs.shape[0]):
-        nwbfile.add_epoch(start_time=epochs['Start'][epoch], stop_time=epochs['End'][epoch], tags=metadata.at[0, f'epoch_{epoch+1}'])
+        nwbfile.add_epoch(start_time=epochs['Start'][epoch], stop_time=epochs['End'][epoch], tags=metadata[f'epoch_{epoch+1}'])
 
     return nwbfile
 
 
 def create_nwb_file(metadata, start_time):
     # get info from folder name
-    rec_id = metadata.at[0,'recording'].split('-')
+    rec_id = metadata['recording'].split('-')
     print('Creating NWB file and adding metadata...')
 
     # create an nwb file
     nwbfile = NWBFile(
-        session_description=metadata.at[0,'session_description'],
-        experiment_description=metadata.at[0,'experiment_description'],
+        session_description=metadata['session_description'],
+        experiment_description=metadata['experiment_description'],
         identifier=rec_id[0],
         session_start_time=start_time,
         session_id=rec_id[1],
@@ -183,12 +176,12 @@ def create_nwb_file(metadata, start_time):
         keywords=['head-direction', 'postsubiculum', 'extracellular', 'freely-moving', 'electrophysiology'])
 
     # add subject
-    age_weeks = metadata.at[0, 'age_weeks']
+    age_weeks = metadata['age_weeks']
     nwbfile.subject = Subject(age=f'P{age_weeks}W',
-                              description=metadata.at[0,'line'],
+                              description=metadata['line'],
                               species='Rattus norvegicus',
                               subject_id=rec_id[0],
-                              genotype=metadata.at[0, 'genotype'],
-                              sex=metadata.at[0, 'sex'])
+                              genotype=metadata['genotype'],
+                              sex=metadata['sex'])
 
     return nwbfile

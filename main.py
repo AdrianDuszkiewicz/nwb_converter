@@ -31,8 +31,9 @@ def main():
     nwb_func.save_nwb_file(nwbfile, datapath, foldername)
 
     # load NWB file (for testing)
-    nwb_func.load_nwb_file(datapath, foldername)
+    data = nwb_func.load_nwb_file(datapath, foldername)
 
+    print()
 
 if __name__ == '__main__':
     main()

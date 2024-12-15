@@ -24,6 +24,7 @@ def get_metadata(datapath, metaname, foldername):
     print('Importing metadata from xml file... ')
     metadata_full = pd.read_excel(datapath / metaname)
     metadata = metadata_full[metadata_full["recording"].str.contains(foldername)]
+    metadata = metadata.iloc[0].to_dict()
 
     return metadata
 
